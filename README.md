@@ -32,9 +32,9 @@ npm run format
 
 
 
-### Build the app for production
+### Start Server
 ```bash
-quasar build
+node server.js
 ```
 
 ### Customize the configuration
