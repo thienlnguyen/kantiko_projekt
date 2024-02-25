@@ -14,7 +14,15 @@ npm install
 quasar dev
 ```
 
+### Check if quasar is installed 
+```bash
+npm list -g quasar
+```
 
+### Install quasar
+```bash
+npm install -g @quasar/cli
+```
 ### Lint the files
 ```bash
 yarn lint
