@@ -2,12 +2,10 @@ const express = require("express");
 const OpenAI = require("openai");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const formidable = require("formidable");
-const fs = require("fs");
 const app = express();
-const path = require("path");
 const port = 8080;
-const folder = path.join(__dirname, "files");
+
+let file = "";
 
 require("dotenv/config");
 
@@ -26,14 +24,14 @@ const openai = new OpenAI({
 app.post("/api/text", async (req, res) => {
   try {
     const nachricht = req.body.nachricht;
-    const file = JSON.stringify(req.body.file);
     const chatHistory = JSON.stringify(req.body.chatHistory);
     let content = "";
 
-    console.log(file);
-    if (file) {
+    if(req.body.file){
+      file = JSON.stringify(req.body.file);
+     
       content =
-        "Kannst du mir ein kleinen bericht über folgende Daten bereitstellen: " +
+        "Kannst du mir ein kleinen Bericht über folgende Daten bereitstellen und den Text im HTML-Stil formatieren, so dass die Tags <strong> und <br> sichtbar sind. Bitte gebe nur den Bericht aus. " +
         file;
     } else if (chatHistory === null) {
       content = nachricht;
@@ -41,8 +39,12 @@ app.post("/api/text", async (req, res) => {
       content =
         "Bitte beantworte mir folgende Frage '" +
         nachricht +
-        "' und beachte dabei den folgenden Chatverlauf: " +
-        chatHistory;
+        "', beachte dabei den folgenden Chatverlauf: " +
+        chatHistory+
+        "' und folgende Daten: " +
+        file +
+        "Schreibe bitte den Text im HTML-Stil, so dass die Tags <strong> und <br> sichtbar sind. Bitte gebe nur deine Antwort aus.";
+        console.log("hi")
     }
     // OpenAI-Chat-Modell verwenden, um eine Antwort zu generieren
     const completion = await openai.chat.completions.create({
@@ -57,10 +59,11 @@ app.post("/api/text", async (req, res) => {
           content: content,
         },
       ],
-      model: "gpt-4-0125-preview",
+      model: "gpt-4-turbo-preview",
     });
 
     // Die generierte Antwort an das Frontend zurücksenden
+    console.log({ response: completion.choices[0] }.response.message.content)
     res.json({ response: completion.choices[0] }.response.message.content);
   } catch (error) {
     console.error("Fehler beim Chat mit OpenAI:", error);

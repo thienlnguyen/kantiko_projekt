@@ -1,38 +1,44 @@
 <template>
-  <q-page class="flex flex-center">
-    <div q-pa-md>
-      <div v-show="!fileAttached">
-        <input type="file" @change="handleFileUpload" />
-        <q-btn label="upload" outlined @click="sendFile"> </q-btn>
+  <q-page>
+    <div class="page">
+
+      <div v-show="loading_upload" class="loader_upload"></div>
+
+      <!-- File-Uploader -->
+      <div q-pa-md class="upload-container" v-show="!fileAttached && !loading_upload">
+        <input class="uploader" type="file" @change="handleFileUpload" />
+        <br>
+        <q-btn v-show="uploadBtn" color="primary" class="upload-btn" outlined @click="sendFile">Datei analysieren lassen</q-btn>
       </div>
 
-      <div v-show="fileAttached">
-        <!-- Chatfenster -->
-        <div class="chat-window" ref="chatWindow">
-          <div
-            v-for="(message, index) in chatHistory"
-            :key="index"
-            class="message"
-          >
-            <span v-if="message.role === 'user'" class="user-message">{{
-              message.content
-            }}</span>
-            <span v-else class="assistant-message">{{ message.content }}</span>
+      <!-- Chatfenster -->
+      <div q-pa-md v-show="fileAttached">
+        <div q-pa-md class="chat-window" ref="chatWindow">
+          <div v-for="(message, index) in chatHistory" :key="index" class="message">
+            <span v-if="message.role === 'user'" class="user-message">
+              <strong>Du: </strong><br>
+              <span v-html="message.content"></span>
+            </span>
+            <span v-else class="assistant-message">
+              <strong>Chat-Bot: </strong><br>
+              <span v-html="message.content"></span>
+            </span>
           </div>
         </div>
 
         <!-- Eingabebereich -->
-        <q-input v-model="text" label="Nachricht" @keyup.enter="senden" />
-
-        <!-- Senden-Button -->
-        <q-btn color="red" icon-right="send" label="Senden" @click="senden" />
+        <div class="input-container">
+          <q-input standout class="text-input" v-model="text" label="Nachricht" @keyup.enter="senden" />
+          <q-btn v-show="!loading_send" class="send-btn" color="primary" icon-right="send" @click="senden" />
+          <div v-show="loading_send" class="loader_container">
+          <div class="loader_send"></div></div>
+        </div>
       </div>
     </div>
   </q-page>
 </template>
 
 <script>
-import { ref } from "vue";
 import { api } from "boot/axios";
 import { excelToJson } from "src/excelToJSON.js";
 
@@ -40,89 +46,187 @@ export default {
   data() {
     return {
       text: "",
-      chatHistory: [], // Array zum Speichern der Chatverlaufsnachrichten
+      chatHistory: [],
       fileAttached: false,
       file: null,
       jsonData: null,
+      loading_upload: false,
+      loading_send: false,
+      uploadBtn: false,
+      fileName: "",
+      fileExtension: "",
     };
   },
   methods: {
     async handleFileUpload(event) {
       const file = event.target.files[0];
+      this.fileName = file.name;
+      this.fileExtension =  this.fileName.split('.').pop().toLowerCase();
+
+    //Excel-Datei in eine JSON umwandeln
       try {
         const jsonData = await excelToJson(file);
         this.jsonData = jsonData;
-        console.log(jsonData);
       } catch (error) {
         console.error("Fehler beim Lesen der Datei:", error);
       }
+
+      this.uploadBtn = true;
     },
     async sendFile() {
-      console.log(this.jsonData);
+      this.loading_upload = true;
+      
+      //JSON Datei an den Server senden für die Erstellung des Berichts
       try {
-        // Senden Sie die aktuelle Nachricht zusammen mit der Chat-History an den Server
         const response = await api.post("/api/text", {
           file: this.jsonData,
         });
-
-        // Antwort des Servers zum Chatverlauf hinzufügen
-        this.chatHistory.push({ role: "user", content: "Datei hochgeladen" });
-        this.chatHistory.push({ role: "assistant", content: response.data });
-        // Scrollen Sie zum unteren Rand des Chatfensters, um die neueste Nachricht anzuzeigen
-        this.$refs.chatWindow.scrollTop = this.$refs.chatWindow.scrollHeight;
-        // Zurücksetzen des File Uploads
-        this.file = null;
-        this.fileAttached = true;
+        
+        const user = "Erstelle ein Bericht für die Datei: "+this.fileName;
+        this.addToHistory(user, response.data)
+       
       } catch (error) {
         console.error("Fehler beim Senden der Nachricht:", error);
       }
+
+      this.loading_upload = false;
+      this.file = null;
+      this.fileAttached = true;
     },
     async senden() {
+      this.loading_send = true;
+
+      // Nachricht wird an den Server gesendet
       try {
-        // Senden Sie die aktuelle Nachricht zusammen mit der Chat-History an den Server
         const response = await api.post("/api/text", {
           nachricht: this.text,
           chatHistory: this.chatHistory,
         });
-        // Antwort des Servers zum Chatverlauf hinzufügen
-        this.chatHistory.push({ role: "user", content: this.text });
-        this.chatHistory.push({ role: "assistant", content: response.data });
-        // Scrollen Sie zum unteren Rand des Chatfensters, um die neueste Nachricht anzuzeigen
-        this.$refs.chatWindow.scrollTop = this.$refs.chatWindow.scrollHeight;
-        // Zurücksetzen des Textfelds
-        this.text = "";
+
+        this.addToHistory(this.text, response.data)
+
       } catch (error) {
         console.error("Fehler beim Senden der Nachricht:", error);
       }
+      this.text = "";
+      this.loading_send = false;
     },
+    addToHistory(userContent, assistantContent){
+      //Antwort der Openai-API wird in die Chat-Historie gespeichert
+      this.chatHistory.push({ role: "user", content: userContent });
+      this.chatHistory.push({ role: "assistant", content: assistantContent });
+      this.$refs.chatWindow.scrollTop = this.$refs.chatWindow.scrollHeight;
+    }
   },
 };
 </script>
 
 <style>
+.page{
+  margin: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+ /* Chatfenster */
 .chat-window {
-  height: 300px;
+  height: 550px;
   overflow-y: scroll;
   border: 1px solid #ccc;
   padding: 10px;
   margin-bottom: 10px;
+  width: 100%;
 }
-
 .message {
   margin-bottom: 5px;
 }
-
 .user-message {
   display: block;
   background-color: #a5c4e2;
   padding: 5px 10px;
+  margin-left: 25px;
   border-radius: 10px;
 }
-
 .assistant-message {
   display: block;
   background-color: #f0f0f0;
   padding: 5px 10px;
+  border-radius: 10px;
+  margin-right: 25px;
+}
+.input-container {
+  display: flex;
+  align-items: center;
+}
+.text-input{
+  margin-right: 10px;
+  width:85%;
+}
+.send-btn {
+  width: 15%;
+  height: 100%;
+}
+
+/* Loader */
+.loader_upload {
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid #1976D2;
+  width: 120px;
+  height: 120px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+}
+.loader_send {
+  border: 13px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 13px solid #1976D2;
+  width: 50px;
+  height: 50px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+}
+.loader_container {
+  display: flex;
+  justify-content: center;
+  width: 15%;
+}
+
+/* File-Uploader */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+input[type="file"]::file-selector-button {
+  border-radius: 4px;
+  padding: 0 16px;
+  height: 40px;
+  cursor: pointer;
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  box-shadow: 0px 1px 0px rgba(0, 0, 0, 0.05);
+  margin-right: 16px;
+  transition: background-color 200ms;
+}
+input[type="file"]::file-selector-button:hover {
+  background-color: #f3f4f6;
+}
+input[type="file"]::file-selector-button:active {
+  background-color: #e5e7eb;
+}
+.uploader {
+  background-color: #e2e2e2;
+  padding: 30px;
+  border-radius: 10px;
+
+}
+.upload-btn{
+  width: 100%;
+  margin-top: 15px;
   border-radius: 10px;
 }
 </style>
