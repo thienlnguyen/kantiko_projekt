@@ -14,7 +14,15 @@ npm install
 quasar dev
 ```
 
+### Check if quasar is installed 
+```bash
+npm list -g quasar
+```
 
+### Install quasar
+```bash
+npm install -g @quasar/cli
+```
 ### Lint the files
 ```bash
 yarn lint
@@ -32,9 +40,9 @@ npm run format
 
 
 
-### Build the app for production
+### Start Server
 ```bash
-quasar build
+node server.js
 ```
 
 ### Customize the configuration
