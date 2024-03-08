@@ -4,6 +4,11 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const app = express();
 const port = 8080;
+const assert = require('assert');
+const { getEncoding, encodingForModel } = require("js-tiktoken");
+
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 let file = "";
 
@@ -26,7 +31,7 @@ app.post("/api/text", async (req, res) => {
     const nachricht = req.body.nachricht;
     const chatHistory = JSON.stringify(req.body.chatHistory);
     let content = "";
-
+    
     if(req.body.file){
       file = JSON.stringify(req.body.file);
      
@@ -44,15 +49,17 @@ app.post("/api/text", async (req, res) => {
         "' und folgende Daten: " +
         file +
         "Schreibe bitte den Text im HTML-Stil, so dass die Tags <strong> und <br> sichtbar sind. Bitte gebe nur deine Antwort aus.";
-        console.log("hi")
     }
+    const enc = getEncoding("gpt2");
+    console.log("Verwendete Token: " + (enc.encode(content).length));
+
     // OpenAI-Chat-Modell verwenden, um eine Antwort zu generieren
     const completion = await openai.chat.completions.create({
       messages: [
         {
           role: "system",
           content:
-            "Du bist ein Finanzassistent, der sich gut damit auskennt, Tabellen zu evaluieren und Berichte zu schreiben.",
+            "Du bist ein Finanzassistent, der sich gut damit auskennt, Tabellen zu evaluieren und Berichte professionell zu schreiben.",
         },
         {
           role: "user",
@@ -63,7 +70,7 @@ app.post("/api/text", async (req, res) => {
     });
 
     // Die generierte Antwort an das Frontend zurücksenden
-    console.log({ response: completion.choices[0] }.response.message.content)
+    //console.log({ response: completion.choices[0] }.response.message.content)
     res.json({ response: completion.choices[0] }.response.message.content);
   } catch (error) {
     console.error("Fehler beim Chat mit OpenAI:", error);

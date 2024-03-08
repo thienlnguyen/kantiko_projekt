@@ -17,9 +17,13 @@
     "axios": "^1.6.7",
     "cors": "^2.8.5",
     "express": "^4.18.2",
+    "gpt-3-encoder": "^1.1.4",
+    "js-tiktoken": "^1.0.10",
     "openai": "^4.28.0",
     "pdf-parse": "^1.1.1",
     "quasar": "^2.6.0",
+    "tiktoken": "^1.0.13",
+    "tiktoken-node": "^0.0.7",
     "vue": "^3.0.0",
     "vue-router": "^4.0.0",
     "xlsx": "^0.18.5"
