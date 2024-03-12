@@ -23,22 +23,6 @@ npm list -g quasar
 ```bash
 npm install -g @quasar/cli
 ```
-### Lint the files
-```bash
-yarn lint
-# or
-npm run lint
-```
-
-
-### Format the files
-```bash
-yarn format
-# or
-npm run format
-```
-
-
 
 ### Start Server
 ```bash
