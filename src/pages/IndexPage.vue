@@ -1,7 +1,6 @@
 <template>
   <q-page>
     <div class="page">
-
       <div v-show="loading_upload" class="loader_upload"></div>
 
       <!-- File-Uploader -->
@@ -28,12 +27,13 @@
 
         <!-- Eingabebereich -->
         <div class="input-container">
-          <q-input standout class="text-input" v-model="text" label="Nachricht" @keyup.enter="senden" />
-          <q-btn v-show="!loading_send" class="send-btn" color="primary" icon-right="send" @click="senden" />
+          <q-input standout class="text-input" v-model="message" label="Nachricht" @keyup.enter="sendQuestion" />
+          <q-btn v-show="!loading_send" class="send-btn" color="primary" icon-right="send" @click="sendQuestion" />
           <div v-show="loading_send" class="loader_container">
           <div class="loader_send"></div></div>
         </div>
       </div>
+      
     </div>
   </q-page>
 </template>
@@ -45,23 +45,20 @@ import { excelToJson } from "src/excelToJSON.js";
 export default {
   data() {
     return {
-      text: "",
+      message: "",
       chatHistory: [],
       fileAttached: false,
-      file: null,
       jsonData: null,
       loading_upload: false,
       loading_send: false,
       uploadBtn: false,
       fileName: "",
-      fileExtension: "",
     };
   },
   methods: {
     async handleFileUpload(event) {
       const file = event.target.files[0];
       this.fileName = file.name;
-      this.fileExtension =  this.fileName.split('.').pop().toLowerCase();
 
     //Excel-Datei in eine JSON umwandeln
       try {
@@ -78,7 +75,7 @@ export default {
       
       //JSON Datei an den Server senden für die Erstellung des Berichts
       try {
-        const response = await api.post("/api/text", {
+        const response = await api.post("/api/createResponse", {
           file: this.jsonData,
         });
         
@@ -90,25 +87,24 @@ export default {
       }
 
       this.loading_upload = false;
-      this.file = null;
       this.fileAttached = true;
     },
-    async senden() {
+    async sendQuestion() {
       this.loading_send = true;
 
       // Nachricht wird an den Server gesendet
       try {
-        const response = await api.post("/api/text", {
-          nachricht: this.text,
+        const response = await api.post("/api/createResponse", {
+          message: this.message,
           chatHistory: this.chatHistory,
         });
 
-        this.addToHistory(this.text, response.data)
+        this.addToHistory(this.message, response.data)
 
       } catch (error) {
         console.error("Fehler beim Senden der Nachricht:", error);
       }
-      this.text = "";
+      this.message = "";
       this.loading_send = false;
     },
     addToHistory(userContent, assistantContent){
@@ -230,3 +226,4 @@ input[type="file"]::file-selector-button:active {
   border-radius: 10px;
 }
 </style>
+

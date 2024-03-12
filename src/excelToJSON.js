@@ -14,14 +14,11 @@ export function excelToJson(file) {
         const sheetData = utils.sheet_to_json(worksheet);
         jsonData[sheetName] = sheetData;
       });
-
       resolve(jsonData);
     };
-
     reader.onerror = (error) => {
       reject(error);
     };
-
     reader.readAsArrayBuffer(file);
   });
 }
