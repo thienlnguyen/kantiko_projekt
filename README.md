@@ -9,11 +9,6 @@ yarn
 npm install
 ```
 
-### Start the app in development mode (hot-code reloading, error reporting, etc.)
-```bash
-quasar dev
-```
-
 ### Check if quasar is installed 
 ```bash
 npm list -g quasar
@@ -22,6 +17,11 @@ npm list -g quasar
 ### Install quasar
 ```bash
 npm install -g @quasar/cli
+```
+
+### Start the app in development mode (hot-code reloading, error reporting, etc.)
+```bash
+quasar dev
 ```
 
 ### Start Server
